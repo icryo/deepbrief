@@ -1,0 +1,33 @@
+# Core
+numpy==1.26.0
+Pillow==10.3.0
+pydantic==2.10.6
+
+# LLM/VLM framework
+camel-ai>=0.2.0
+
+# PDF processing
+PyMuPDF
+
+# Image-text matching
+torch==2.7.0
+torchvision==0.22.0
+transformers
+sentencepiece
+
+# TTS — Amazon Polly (default)
+boto3
+
+# TTS — Orpheus (local GPU, optional)
+# pip install orpheus-tts vllm
+
+# Video assembly
+moviepy==1.0.3
+
+# Subtitles
+whisper==1.1.10
+
+# API server
+fastapi
+uvicorn
+python-multipart

@@ -1,0 +1,85 @@
+{% if projects %}
+<div class="table-scroll">
+<table class="paper-table">
+    <thead>
+        <tr>
+            <th class="col-rank">#</th>
+            <th>Repository</th>
+            <th class="col-score">Stars</th>
+            <th class="col-score">Forks</th>
+            <th class="col-score">PRs</th>
+            <th class="col-code">Lang</th>
+            <th class="col-code">Domain</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in projects %}
+        {% set rank = offset + loop.index %}
+        <tr>
+            <td class="col-rank">{{ rank }}</td>
+            <td>
+                <div class="paper-title">
+                    <a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.repo_name }}</a>
+                </div>
+                {% if p.description %}
+                <div class="repo-desc">{{ p.description[:200] }}{% if p.description | length > 200 %}&hellip;{% endif %}</div>
+                {% endif %}
+                {% if p.collection_names %}
+                <div style="margin-top:0.25rem">
+                    {% for tag in p.collection_names.split(',') %}
+                    {% if tag.strip() %}
+                    <span class="badge badge--accent" style="font-size:0.7rem">{{ tag.strip() }}</span>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </td>
+            <td class="col-score">
+                <span style="color:var(--amber); font-weight:600">{{ p.stars }}</span>
+            </td>
+            <td class="col-score">{{ p.forks }}</td>
+            <td class="col-score">{{ p.pull_requests }}</td>
+            <td class="col-code">
+                {% if p.language %}
+                <span class="badge" style="font-size:0.7rem">{{ p.language }}</span>
+                {% endif %}
+            </td>
+            <td class="col-code">
+                {% if p.domain == 'aiml' %}
+                <span class="badge badge--accent" style="font-size:0.7rem">AI/ML</span>
+                {% elif p.domain == 'security' %}
+                <span class="badge badge--red" style="font-size:0.7rem">Security</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{% set filter_qs %}{% if search %}&search={{ search }}{% endif %}{% if language %}&language={{ language }}{% endif %}{% if domain_filter %}&domain={{ domain_filter }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% endset %}
+
+{% if total > limit %}
+<div class="pagination">
+    {% if offset > 0 %}
+    <a href="/github?offset={{ offset - limit }}&limit={{ limit }}{{ filter_qs }}"
+       hx-get="/github?offset={{ offset - limit }}&limit={{ limit }}{{ filter_qs }}"
+       hx-target="#gh-results" hx-push-url="true" hx-indicator="#page-loader"
+       class="btn btn-sm">&larr; Prev</a>
+    {% endif %}
+    <span class="page-info">{{ offset + 1 }}&ndash;{{ [offset + limit, total] | min }} of {{ total }}</span>
+    {% if offset + limit < total %}
+    <a href="/github?offset={{ offset + limit }}&limit={{ limit }}{{ filter_qs }}"
+       hx-get="/github?offset={{ offset + limit }}&limit={{ limit }}{{ filter_qs }}"
+       hx-target="#gh-results" hx-push-url="true" hx-indicator="#page-loader"
+       class="btn btn-sm">Next &rarr;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <h2>No projects found</h2>
+    <p>{% if search or language or domain_filter %}Try adjusting your filters.{% else %}Run the GitHub pipeline to discover trending projects.{% endif %}</p>
+</div>
+{% endif %}

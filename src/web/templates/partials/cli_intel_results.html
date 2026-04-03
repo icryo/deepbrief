@@ -1,0 +1,107 @@
+{% if findings %}
+<div class="table-scroll">
+<table class="paper-table">
+    <thead>
+        <tr>
+            <th class="col-rank">#</th>
+            <th>Finding</th>
+            <th class="col-score">Repo</th>
+            <th class="col-code">Type</th>
+            <th class="col-code">Status</th>
+            <th class="col-score">Score</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for f in findings %}
+        {% set rank = offset + loop.index %}
+        <tr{% if f.is_new %} style="border-left:2px solid var(--emerald)"{% endif %}>
+            <td class="col-rank">{{ rank }}</td>
+            <td>
+                <div class="paper-title">
+                    {% if f.url %}<a href="{{ f.url }}" target="_blank" rel="noopener">{{ f.title }}</a>{% else %}{{ f.title }}{% endif %}
+                    {% if f.is_new %}<span class="badge badge--accent" style="font-size:0.65rem; margin-left:0.25rem; vertical-align:middle">NEW</span>{% endif %}
+                </div>
+                {% if f.pr_number %}
+                <span style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono)">#{{ f.pr_number }}</span>
+                {% endif %}
+                {% if f.summary %}
+                <div class="repo-desc">{{ f.summary[:200] }}{% if f.summary | length > 200 %}&hellip;{% endif %}</div>
+                {% elif f.description %}
+                <div class="repo-desc">{{ f.description[:200] }}{% if f.description | length > 200 %}&hellip;{% endif %}</div>
+                {% endif %}
+                {% if f.labels %}
+                <div style="margin-top:0.25rem">
+                    {% for label in f.labels[:5] %}
+                    <span class="badge" style="font-size:0.65rem">{{ label }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </td>
+            <td class="col-score">
+                <span style="font-size:0.78rem">{{ f.repo_name.split('/')[1] }}</span>
+            </td>
+            <td class="col-code">
+                {% if f.finding_type == 'pr' %}
+                <span class="badge badge--accent" style="font-size:0.7rem">PR</span>
+                {% elif f.finding_type == 'release' %}
+                <span class="badge" style="font-size:0.7rem; background:var(--emerald-glow); color:var(--emerald)">Release</span>
+                {% elif f.finding_type == 'architecture' %}
+                <span class="badge" style="font-size:0.7rem; background:var(--purple-glow); color:var(--purple)">Arch</span>
+                {% else %}
+                <span class="badge" style="font-size:0.7rem">{{ f.finding_type }}</span>
+                {% endif %}
+            </td>
+            <td class="col-code">
+                {% if f.status == 'draft' %}
+                <span style="color:var(--text-muted); font-size:0.78rem">Draft</span>
+                {% elif f.status == 'open' %}
+                <span style="color:var(--emerald); font-size:0.78rem">Open</span>
+                {% elif f.status == 'shipped' %}
+                <span style="color:var(--accent); font-size:0.78rem">Shipped</span>
+                {% elif f.status == 'detected' %}
+                <span style="color:var(--purple); font-size:0.78rem">Detected</span>
+                {% else %}
+                <span style="font-size:0.78rem">{{ f.status or '' }}</span>
+                {% endif %}
+            </td>
+            <td class="col-score">
+                {% if f.composite is not none %}
+                {% set pct = ((f.composite or 0) | float / 10 * 100) | round(0) | int %}
+                {% set level = 'high' if pct >= 65 else ('mid' if pct >= 40 else 'low') %}
+                <div class="score-badge {{ level }}">{{ f.composite }}</div>
+                {% else %}
+                <span style="color:var(--text-dim); font-size:0.78rem">&mdash;</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{% set filter_qs %}{% if search %}&search={{ search }}{% endif %}{% if repo_filter %}&repo={{ repo_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}{% if new_only %}&new_only=1{% endif %}{% endset %}
+
+{% if total > limit %}
+<div class="pagination">
+    {% if offset > 0 %}
+    <a href="/cli-intel?offset={{ offset - limit }}&limit={{ limit }}{{ filter_qs }}"
+       hx-get="/cli-intel?offset={{ offset - limit }}&limit={{ limit }}{{ filter_qs }}"
+       hx-target="#cli-results" hx-push-url="true" hx-indicator="#page-loader"
+       class="btn btn-sm">&larr; Prev</a>
+    {% endif %}
+    <span class="page-info">{{ offset + 1 }}&ndash;{{ [offset + limit, total] | min }} of {{ total }}</span>
+    {% if offset + limit < total %}
+    <a href="/cli-intel?offset={{ offset + limit }}&limit={{ limit }}{{ filter_qs }}"
+       hx-get="/cli-intel?offset={{ offset + limit }}&limit={{ limit }}{{ filter_qs }}"
+       hx-target="#cli-results" hx-push-url="true" hx-indicator="#page-loader"
+       class="btn btn-sm">Next &rarr;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <h2>No findings yet</h2>
+    <p>{% if search or repo_filter or type_filter %}Try adjusting your filters.{% else %}Run a CLI intel scan to discover competitor activity.{% endif %}</p>
+</div>
+{% endif %}

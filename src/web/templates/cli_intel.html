@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}CLI Intel — Research Intelligence{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem">
+        <div>
+            <h1>CLI Competitive Intelligence</h1>
+            <div class="subtitle">{{ total }} findings across {{ repos | length }} tracked repos{% if run.date_start %} · {{ run.date_start }} to {{ run.date_end }}{% endif %}{% if new_count %} · <span style="color:var(--emerald)">{{ new_count }} new</span>{% endif %}</div>
+        </div>
+        <button type="button" class="btn btn-sm btn-ghost" onclick="this.disabled=true;this.textContent='Scanning...';fetch('/run/cli_intel',{method:'POST'}).then(function(){showToast('CLI intel scan started','success')}).catch(function(){showToast('Scan failed','error')})">Run Scan</button>
+    </div>
+</div>
+
+{% if repos %}
+<div class="stats-grid" style="margin-bottom:1.5rem">
+    {% for r in repos %}
+    <div class="stat-card" style="cursor:default">
+        <div class="label" style="font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
+            <a href="https://github.com/{{ r.repo_name }}" target="_blank" rel="noopener" style="color:inherit; text-decoration:none">{{ r.repo_name.split('/')[1] }}</a>
+        </div>
+        <div class="value" style="font-size:1.3rem; color:var(--amber)">{{ "{:,}".format(r.stars) }}</div>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.25rem">
+            {{ r.open_prs }} PRs · {{ r.commits_30d }} commits/30d
+            {% if r.latest_release %} · {{ r.latest_release }}{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="filter-bar">
+    <form hx-get="/cli-intel" hx-target="#cli-results" hx-push-url="true" hx-indicator="#page-loader">
+        <input type="search" name="search" value="{{ search or '' }}" placeholder="Search findings...">
+        {% if available_repos %}
+        <select name="repo" onchange="this.closest('form').requestSubmit()">
+            <option value="">All repos</option>
+            {% for rname in available_repos %}
+            <option value="{{ rname }}" {% if repo_filter == rname %}selected{% endif %}>{{ rname.split('/')[1] }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+        <select name="type" onchange="this.closest('form').requestSubmit()">
+            <option value="">All types</option>
+            <option value="pr" {% if type_filter == 'pr' %}selected{% endif %}>PRs</option>
+            <option value="release" {% if type_filter == 'release' %}selected{% endif %}>Releases</option>
+            <option value="architecture" {% if type_filter == 'architecture' %}selected{% endif %}>Architecture</option>
+        </select>
+        <select name="sort" onchange="this.closest('form').requestSubmit()">
+            <option value="score" {% if not sort or sort == 'score' %}selected{% endif %}>Sort: Score</option>
+            <option value="threat" {% if sort == 'threat' %}selected{% endif %}>Sort: Threat</option>
+            <option value="novelty" {% if sort == 'novelty' %}selected{% endif %}>Sort: Novelty</option>
+            <option value="repo" {% if sort == 'repo' %}selected{% endif %}>Sort: Repo</option>
+            <option value="type" {% if sort == 'type' %}selected{% endif %}>Sort: Type</option>
+        </select>
+        <label>
+            <input type="checkbox" name="new_only" value="1" {% if new_only %}checked{% endif %} onchange="this.closest('form').requestSubmit()">
+            New only
+        </label>
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    </form>
+</div>
+
+<div id="cli-results">
+    {% include "partials/cli_intel_results.html" %}
+</div>
+{% endblock %}

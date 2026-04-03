@@ -1,0 +1,41 @@
+{% set pct = ((p.composite or 0) | float / 10 * 100) | round(0) | int %}
+{% set level = 'high' if pct >= 65 else ('mid' if pct >= 40 else 'low') %}
+<tr>
+    <td class="col-rank">{{ rank if rank is defined else "" }}</td>
+    <td>
+        <a href="/papers/{{ p.domain }}/{{ p.id }}" class="paper-title-link">
+            {{ p.title[:80] }}{% if p.title | length > 80 %}&hellip;{% endif %}
+        </a>
+        {% if p.topics is iterable and p.topics is not string and p.topics | length > 0 %}
+        <div style="margin-top:2px">
+            {% for t in p.topics[:2] %}
+            <span class="badge badge--accent" style="font-size:0.55rem; padding:0.08rem 0.35rem">{{ t }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% if p.is_discovery is defined and p.is_discovery %}
+        <span class="badge badge--discover">DISCOVER</span>
+        {% endif %}
+    </td>
+    <td class="col-score composite score-{{ level }}" id="score-{{ p.id }}">
+        {% if p.preference_boost is defined and p.preference_boost != 0 %}
+        <span title="Adjusted: {{ p.adjusted_score }} (raw {{ p.composite }}{{ ' %+.1f'|format(p.preference_boost) }})">
+            {{ p.adjusted_score }}
+            {% if p.preference_boost > 0 %}<span class="boost-arrow boost-up">&#9650;</span>{% elif p.preference_boost < 0 %}<span class="boost-arrow boost-down">&#9660;</span>{% endif %}
+        </span>
+        <div class="score-raw">({{ p.composite }})</div>
+        {% else %}
+        {{ p.composite }}
+        {% endif %}
+    </td>
+    <td class="col-score">{{ p.score_axis_1 | default("&mdash;") }}</td>
+    <td class="col-score">{{ p.score_axis_2 | default("&mdash;") }}</td>
+    <td class="col-score">{{ p.score_axis_3 | default("&mdash;") }}</td>
+    <td class="col-code">{% if p.code_url or p.github_repo %}<span class="code-check">&#10003;</span>{% else %}<span class="code-dash">&mdash;</span>{% endif %}</td>
+    <td class="col-signals">
+        {% set paper_id = p.id %}
+        {% set user_signal = p.user_signal if p.user_signal is defined else None %}
+        {% include "partials/signal_buttons.html" %}
+    </td>
+    <td class="col-summary">{{ (p.summary or "")[:100] }}{% if (p.summary or "") | length > 100 %}&hellip;{% endif %}</td>
+</tr>

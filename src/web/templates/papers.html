@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ domain_label }} Papers — Research Intelligence{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem">
+        <div>
+            <h1>{{ domain_label }} Papers</h1>
+            <div class="subtitle">{{ total }} papers scored{% if run.date_start %} · {{ run.date_start }} to {{ run.date_end }}{% endif %}</div>
+        </div>
+        <button type="button" class="btn btn-sm btn-ghost" onclick="this.disabled=true;this.textContent='Enriching...';fetch('/run/enrich/{{ domain }}',{method:'POST'}).then(function(){showToast('S2 enrichment started','success')}).catch(function(){showToast('Enrichment failed','error')})">Enrich with S2</button>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <form hx-get="/papers/{{ domain }}" hx-target="#paper-results" hx-push-url="true" hx-indicator="#page-loader">
+        <input type="search" name="search" value="{{ search or '' }}" placeholder="Search papers...">
+        <label>
+            Min score
+            <input type="number" name="min_score" value="{{ min_score if min_score is not none else '' }}" min="0" max="10" step="0.5">
+        </label>
+        <label>
+            <input type="checkbox" name="has_code" value="1" {% if has_code %}checked{% endif %}>
+            Has code
+        </label>
+        {% if available_topics %}
+        <select name="topic">
+            <option value="">All topics</option>
+            {% for t in available_topics %}
+            <option value="{{ t }}" {% if topic == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+        <select name="sort">
+            <option value="adjusted" {% if sort == 'adjusted' or (not sort and has_preferences) %}selected{% endif %}>Sort: Personalized</option>
+            <option value="score" {% if sort == 'score' or (not sort and not has_preferences) %}selected{% endif %}>Sort: Score</option>
+            <option value="date" {% if sort == 'date' %}selected{% endif %}>Sort: Date</option>
+            <option value="axis1" {% if sort == 'axis1' %}selected{% endif %}>Sort: {{ axis_labels[0] }}</option>
+            <option value="axis2" {% if sort == 'axis2' %}selected{% endif %}>Sort: {{ axis_labels[1] }}</option>
+            <option value="axis3" {% if sort == 'axis3' %}selected{% endif %}>Sort: {{ axis_labels[2] }}</option>
+            <option value="title" {% if sort == 'title' %}selected{% endif %}>Sort: Title</option>
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    </form>
+</div>
+
+{% if scoring_incomplete is defined and scoring_incomplete %}
+<div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-left:3px solid var(--amber); border-radius:var(--radius); padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.85rem; color:var(--text-secondary)">
+    Scoring incomplete &mdash; some papers in this run could not be scored. Only scored papers are shown.
+</div>
+{% endif %}
+
+<div id="paper-results">
+    {% include "partials/papers_results.html" %}
+</div>
+{% endblock %}

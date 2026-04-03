@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Research Intelligence{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Week of {{ week_label }}</h1>
+    <div class="subtitle">Research triage overview</div>
+</div>
+
+{% if not has_papers %}
+<div style="background:linear-gradient(135deg, rgba(59,130,246,0.08), rgba(167,139,250,0.06)); border:1px solid var(--border); border-radius:var(--radius-xl); padding:2rem 2.5rem; margin-bottom:2rem; text-align:center">
+    <div style="font-family:var(--font-display); font-size:1.3rem; font-weight:700; letter-spacing:-0.02em; margin-bottom:0.5rem">Welcome to Research Intelligence</div>
+    <div style="font-size:0.9rem; color:var(--text-muted); line-height:1.6; max-width:480px; margin:0 auto 1.5rem">
+        {% if running_pipelines %}
+        A pipeline is running now. Papers will appear here once scoring finishes.
+        {% else %}
+        Run your first pipeline to start collecting and scoring papers.
+        {% endif %}
+    </div>
+    {% if not running_pipelines %}
+    <div style="display:flex; gap:0.75rem; justify-content:center; flex-wrap:wrap">
+        {% if is_pipeline_enabled('aiml') %}
+        <button type="button" class="btn btn-primary" onclick="triggerPipeline('aiml', this)">Run AI/ML Pipeline</button>
+        {% endif %}
+        {% if is_pipeline_enabled('security') %}
+        <button type="button" class="btn btn-primary" onclick="triggerPipeline('security', this)">Run Security Pipeline</button>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% if show_seed_banner is defined and show_seed_banner %}
+    <div style="margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid var(--border)">
+        <div style="font-size:0.85rem; color:var(--text-muted)">While you wait, <a href="/seed-preferences" style="color:var(--purple); font-weight:600">pick some papers you like</a> to personalize your feed.</div>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+{% if show_seed_banner is defined and show_seed_banner %}
+<div style="background:linear-gradient(135deg, rgba(167,139,250,0.08), rgba(59,130,246,0.06)); border:1px solid var(--border); border-left:3px solid var(--purple); border-radius:var(--radius-lg); padding:1rem 1.25rem; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem">
+    <div>
+        <div style="font-weight:600; font-size:0.9rem">New here?</div>
+        <div style="font-size:0.82rem; color:var(--text-muted)">Pick some papers you like to personalize your feed.</div>
+    </div>
+    <a href="/seed-preferences" class="btn btn-sm" style="border-color:var(--purple); color:var(--purple)">Pick Papers</a>
+</div>
+{% endif %}
+{% endif %}
+
+<div class="stats-grid">
+    <div class="stat-card stat-card--blue">
+        <div class="label">AI/ML Papers</div>
+        <div class="value">{{ aiml_count }}</div>
+    </div>
+    <div class="stat-card stat-card--red">
+        <div class="label">Security Papers</div>
+        <div class="value">{{ security_count }}</div>
+    </div>
+    {% if github_enabled() %}
+    <div class="stat-card stat-card--green">
+        <div class="label">GitHub Projects</div>
+        <div class="value">{{ github_count }}</div>
+    </div>
+    {% endif %}
+    {% if events_enabled() %}
+    <div class="stat-card stat-card--purple">
+        <div class="label">Events Tracked</div>
+        <div class="value">{{ event_count }}</div>
+    </div>
+    {% endif %}
+    {% if cli_intel_enabled() %}
+    <div class="stat-card stat-card--red">
+        <div class="label">CLI Intel Findings</div>
+        <div class="value">{{ cli_intel_count }}{% if cli_intel_new %} <span style="font-size:0.6em; color:var(--emerald)">({{ cli_intel_new }} new)</span>{% endif %}</div>
+    </div>
+    {% endif %}
+    <div class="stat-card stat-card--purple" style="opacity:0.8">
+        <div class="label">Last Run</div>
+        <div class="value value--small">{{ (last_run or "") | replace("T", " ") or "Never" }}</div>
+    </div>
+</div>
+
+<div class="two-col">
+    <div>
+        <div class="section-header">
+            <h2>AI/ML Top 5</h2>
+            <span class="badge badge--accent">AI/ML</span>
+        </div>
+        {% if aiml_top %}
+            {% for p in aiml_top %}
+            {% set rank = loop.index %}
+            {% include "partials/paper_card.html" %}
+            {% endfor %}
+        {% else %}
+        <div class="empty-state" style="padding:2rem">
+            <p>No AI/ML papers scored yet.</p>
+        </div>
+        {% endif %}
+    </div>
+    <div>
+        <div class="section-header">
+            <h2>Security Top 5</h2>
+            <span class="badge badge--red">Security</span>
+        </div>
+        {% if security_top %}
+            {% for p in security_top %}
+            {% set rank = loop.index %}
+            {% include "partials/paper_card.html" %}
+            {% endfor %}
+        {% else %}
+        <div class="empty-state" style="padding:2rem">
+            <p>No security papers scored yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if events_enabled() and events_grouped %}
+<div class="section-header" style="margin-top:0.5rem">
+    <h2>Events This Week</h2>
+</div>
+<div class="events-auto-grid">
+    {% for cat, cat_events in events_grouped.items() %}
+    <div class="event-section">
+        <div class="section-title" style="font-size:0.95rem">{{ cat | title }}</div>
+        {% for e in cat_events[:5] %}
+        <div class="event-card event-card--{{ cat }}">
+            <div class="event-title">
+                {% if e.url %}<a href="{{ e.url }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}
+            </div>
+            <div class="event-meta">{{ e.source }}{% if e.event_date %} · {% if cat == 'conference' %}<span style="color:var(--amber)">{{ e.event_date | format_date('medium') }}</span>{% else %}{{ e.event_date | format_date('medium') }}{% endif %}{% endif %}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="action-row">
+    <button type="button" class="btn btn-primary" id="btn-aiml"
+        {% if 'aiml' in running_pipelines %}disabled style="opacity:0.6"{% endif %}
+        onclick="triggerPipeline('aiml', this)">
+        {% if 'aiml' in running_pipelines %}Running...{% else %}Run AI/ML Pipeline{% endif %}
+    </button>
+    <button type="button" class="btn btn-primary" id="btn-security"
+        {% if 'security' in running_pipelines %}disabled style="opacity:0.6"{% endif %}
+        onclick="triggerPipeline('security', this)">
+        {% if 'security' in running_pipelines %}Running...{% else %}Run Security Pipeline{% endif %}
+    </button>
+    {% if github_enabled() %}
+    <button type="button" class="btn" id="btn-github"
+        {% if 'github' in running_pipelines %}disabled style="opacity:0.6"{% endif %}
+        onclick="triggerPipeline('github', this)">
+        {% if 'github' in running_pipelines %}Running...{% else %}Run GitHub{% endif %}
+    </button>
+    {% endif %}
+    {% if events_enabled() %}
+    <button type="button" class="btn" id="btn-events"
+        {% if 'events' in running_pipelines %}disabled style="opacity:0.6"{% endif %}
+        onclick="triggerPipeline('events', this)">
+        {% if 'events' in running_pipelines %}Running...{% else %}Run Events{% endif %}
+    </button>
+    {% endif %}
+    {% if cli_intel_enabled() %}
+    <button type="button" class="btn" id="btn-cli_intel"
+        {% if 'cli_intel' in running_pipelines %}disabled style="opacity:0.6"{% endif %}
+        onclick="triggerPipeline('cli_intel', this)">
+        {% if 'cli_intel' in running_pipelines %}Running...{% else %}Run CLI Intel{% endif %}
+    </button>
+    {% endif %}
+</div>
+<script>
+function triggerPipeline(domain, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Starting...';
+    fetch('/run/' + domain, {method: 'POST'}).then(function() {
+        showToast(domain.charAt(0).toUpperCase() + domain.slice(1) + ' pipeline started', 'success');
+        btn.textContent = 'Running...';
+        btn.style.opacity = '0.6';
+        startPolling();
+    }).catch(function() {
+        showToast('Failed to start pipeline', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Run ' + domain + ' Pipeline';
+    });
+}
+
+// Auto-poll /api/status when pipelines are running
+var _pollTimer = null;
+var _knownRunning = {{ running_pipelines | tojson }};
+
+function startPolling() {
+    if (_pollTimer) return;
+    _pollTimer = setInterval(pollStatus, 5000);
+}
+
+function pollStatus() {
+    fetch('/api/status').then(function(r) { return r.json(); }).then(function(data) {
+        var running = data.running_pipelines || [];
+        // Check if any previously-running pipeline has finished
+        for (var i = 0; i < _knownRunning.length; i++) {
+            if (running.indexOf(_knownRunning[i]) === -1) {
+                showToast(_knownRunning[i].charAt(0).toUpperCase() + _knownRunning[i].slice(1) + ' pipeline finished', 'success');
+                setTimeout(function() { window.location.reload(); }, 1500);
+                clearInterval(_pollTimer);
+                _pollTimer = null;
+                return;
+            }
+        }
+        _knownRunning = running;
+        if (running.length === 0) {
+            clearInterval(_pollTimer);
+            _pollTimer = null;
+        }
+    }).catch(function() {});
+}
+
+// Start polling if pipelines are already running on page load
+if (_knownRunning.length > 0) {
+    startPolling();
+}
+</script>
+{% endblock %}

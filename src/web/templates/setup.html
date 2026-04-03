@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Setup — Research Intelligence</title>
+    <meta name="theme-color" content="#0b1121">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+    .setup-wrap {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+    .setup-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        max-width: 640px;
+        width: 100%;
+        padding: 2.5rem;
+        box-shadow: var(--shadow-lg);
+        animation: fadeSlideUp 0.5s ease-out both;
+    }
+    .setup-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 2rem;
+    }
+    .setup-logo .logo-dot {
+        width: 10px;
+        height: 10px;
+    }
+    .setup-logo span {
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+    .setup-step {
+        display: none;
+    }
+    .setup-step.active {
+        display: block;
+        animation: fadeSlideUp 0.35s ease-out both;
+    }
+    .setup-step h2 {
+        font-family: var(--font-display);
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        margin-bottom: 0.5rem;
+    }
+    .setup-step .step-desc {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+    .setup-field {
+        margin-bottom: 1.25rem;
+    }
+    .setup-field label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 0.4rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .setup-field input[type="number"],
+    .setup-field input[type="text"],
+    .setup-field input[type="password"],
+    .setup-field select {
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius);
+        color: var(--text);
+        padding: 0.6rem 0.85rem;
+        font-size: 0.9rem;
+        font-family: var(--font-body);
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .setup-field input:focus,
+    .setup-field select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px var(--accent-muted);
+    }
+    .setup-field .hint {
+        font-size: 0.78rem;
+        color: var(--text-dim);
+        margin-top: 0.3rem;
+    }
+    .setup-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.85rem 1rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        margin-bottom: 0.6rem;
+        cursor: pointer;
+        transition: border-color 0.15s;
+    }
+    .setup-toggle:hover {
+        border-color: var(--border-strong);
+    }
+    .setup-toggle .toggle-label {
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .setup-toggle .toggle-desc {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-top: 0.15rem;
+    }
+    .toggle-switch {
+        position: relative;
+        width: 42px;
+        height: 24px;
+        flex-shrink: 0;
+    }
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .toggle-switch .slider {
+        position: absolute;
+        inset: 0;
+        background: var(--bg-surface);
+        border-radius: 12px;
+        transition: background 0.2s;
+        cursor: pointer;
+    }
+    .toggle-switch .slider::after {
+        content: '';
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        left: 3px;
+        top: 3px;
+        background: var(--text-muted);
+        border-radius: 50%;
+        transition: transform 0.2s, background 0.2s;
+    }
+    .toggle-switch input:checked + .slider {
+        background: var(--accent);
+    }
+    .toggle-switch input:checked + .slider::after {
+        transform: translateX(18px);
+        background: var(--bg-deep);
+    }
+    .setup-axes {
+        margin-top: 0.75rem;
+        padding: 0.85rem;
+        background: var(--bg);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+    }
+    .setup-axes.hidden {
+        display: none;
+    }
+    .axis-row {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    .axis-row:last-child {
+        margin-bottom: 0;
+    }
+    .axis-row .axis-name {
+        flex: 1;
+        font-size: 0.84rem;
+        font-weight: 500;
+    }
+    .axis-row input[type="number"] {
+        width: 5rem;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--text);
+        padding: 0.35rem 0.5rem;
+        font-size: 0.84rem;
+        font-family: var(--font-mono);
+        text-align: center;
+    }
+    .axis-row input[type="number"]:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+    .setup-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 2rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border);
+    }
+    .step-dots {
+        display: flex;
+        gap: 6px;
+    }
+    .step-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--bg-surface);
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+    .step-dot.active {
+        background: var(--accent);
+        box-shadow: 0 0 6px var(--accent);
+    }
+    .step-dot.done {
+        background: var(--emerald);
+    }
+    .api-key-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.82rem;
+        font-weight: 500;
+        padding: 0.3rem 0.7rem;
+        border-radius: var(--radius-full);
+        margin-top: 0.5rem;
+    }
+    .api-key-status.valid {
+        background: var(--emerald-glow);
+        color: var(--emerald);
+    }
+    .api-key-status.invalid {
+        background: var(--red-glow);
+        color: var(--red);
+    }
+    .api-key-status.checking {
+        background: var(--amber-glow);
+        color: var(--amber);
+    }
+    .setup-summary {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1rem;
+    }
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.4rem 0;
+        font-size: 0.85rem;
+    }
+    .summary-item:not(:last-child) {
+        border-bottom: 1px solid var(--border);
+    }
+    .summary-item .label {
+        color: var(--text-muted);
+    }
+    .summary-item .value {
+        font-weight: 600;
+        color: var(--text);
+    }
+    </style>
+</head>
+<body>
+    <div class="setup-wrap">
+        <div class="setup-card">
+            <div class="setup-logo">
+                <span class="logo-dot"></span>
+                <span>Research Intelligence</span>
+            </div>
+
+            <!-- Step 1: Welcome -->
+            <div class="setup-step active" data-step="1">
+                <h2>Welcome</h2>
+                <p class="step-desc">
+                    Research Intelligence monitors academic papers and GitHub projects,
+                    scores them with AI, and learns your preferences over time.
+                    This setup will configure your instance.
+                </p>
+                <div style="padding:1rem; background:var(--bg); border-radius:var(--radius); border-left:3px solid var(--accent); font-size:0.85rem; color:var(--text-secondary); line-height:1.65">
+                    You'll configure:<br>
+                    &bull; API key for AI scoring<br>
+                    &bull; Which research domains to monitor<br>
+                    &bull; GitHub &amp; events tracking<br>
+                    &bull; Pipeline schedule
+                </div>
+            </div>
+
+            <!-- Step 2: API Key -->
+            <div class="setup-step" data-step="2">
+                <h2>API Key</h2>
+                <p class="step-desc">
+                    An Anthropic API key is required for paper scoring.
+                    It will be stored in a local <code>.env</code> file, not in the config.
+                </p>
+                <div class="setup-field">
+                    <label for="api-key">Anthropic API Key</label>
+                    <input type="password" id="api-key" name="api_key" placeholder="sk-ant-..." autocomplete="off">
+                    <div class="hint">Get one at <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a></div>
+                </div>
+                <div id="api-key-result"></div>
+                <button type="button" class="btn btn-sm" onclick="validateApiKey()" id="validate-btn">Validate Key</button>
+            </div>
+
+            <!-- Step 3: Domains -->
+            <div class="setup-step" data-step="3">
+                <h2>Research Domains</h2>
+                <p class="step-desc">Choose which research areas to monitor.</p>
+
+                <div class="setup-toggle" onclick="this.querySelector('input').click()">
+                    <div>
+                        <div class="toggle-label">AI / ML</div>
+                        <div class="toggle-desc">Papers from arXiv + HuggingFace trending</div>
+                    </div>
+                    <label class="toggle-switch" onclick="event.stopPropagation()">
+                        <input type="checkbox" id="domain-aiml" checked onchange="toggleAxes('aiml', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setup-axes" id="axes-aiml">
+                    <div style="font-size:0.72rem; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-muted); margin-bottom:0.5rem">Scoring Weights</div>
+                    <div class="axis-row">
+                        <span class="axis-name">Code & Weights</span>
+                        <input type="number" id="aiml-w1" value="30" min="0" max="100" step="5">
+                        <span style="font-size:0.78rem; color:var(--text-dim)">%</span>
+                    </div>
+                    <div class="axis-row">
+                        <span class="axis-name">Novelty</span>
+                        <input type="number" id="aiml-w2" value="35" min="0" max="100" step="5">
+                        <span style="font-size:0.78rem; color:var(--text-dim)">%</span>
+                    </div>
+                    <div class="axis-row">
+                        <span class="axis-name">Practical Applicability</span>
+                        <input type="number" id="aiml-w3" value="35" min="0" max="100" step="5">
+                        <span style="font-size:0.78rem; color:var(--text-dim)">%</span>
+                    </div>
+                </div>
+
+                <div class="setup-toggle" onclick="this.querySelector('input').click()" style="margin-top:0.75rem">
+                    <div>
+                        <div class="toggle-label">Security</div>
+                        <div class="toggle-desc">Security research from arXiv cs.CR</div>
+                    </div>
+                    <label class="toggle-switch" onclick="event.stopPropagation()">
+                        <input type="checkbox" id="domain-security" checked onchange="toggleAxes('security', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setup-axes" id="axes-security">
+                    <div style="font-size:0.72rem; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-muted); margin-bottom:0.5rem">Scoring Weights</div>
+                    <div class="axis-row">
+                        <span class="axis-name">Has Code / PoC</span>
+                        <input type="number" id="sec-w1" value="25" min="0" max="100" step="5">
+                        <span style="font-size:0.78rem; color:var(--text-dim)">%</span>
+                    </div>
+                    <div class="axis-row">
+                        <span class="axis-name">Novel Attack Surface</span>
+                        <input type="number" id="sec-w2" value="40" min="0" max="100" step="5">
+                        <span style="font-size:0.78rem; color:var(--text-dim)">%</span>
+                    </div>
+                    <div class="axis-row">
+                        <span class="axis-name">Real-World Impact</span>
+                        <input type="number" id="sec-w3" value="35" min="0" max="100" step="5">
+                        <span style="font-size:0.78rem; color:var(--text-dim)">%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Optional Features -->
+            <div class="setup-step" data-step="4">
+                <h2>Optional Features</h2>
+                <p class="step-desc">Enable or disable additional monitoring features.</p>
+                <div class="setup-toggle" onclick="this.querySelector('input').click()">
+                    <div>
+                        <div class="toggle-label">GitHub Tracking</div>
+                        <div class="toggle-desc">Monitor trending repos in AI/ML and Security via OSSInsight</div>
+                    </div>
+                    <label class="toggle-switch" onclick="event.stopPropagation()">
+                        <input type="checkbox" id="github-enabled" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setup-toggle" onclick="this.querySelector('input').click()">
+                    <div>
+                        <div class="toggle-label">Events</div>
+                        <div class="toggle-desc">Conference deadlines, releases, and RSS news feeds</div>
+                    </div>
+                    <label class="toggle-switch" onclick="event.stopPropagation()">
+                        <input type="checkbox" id="events-enabled" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Step 5: Model Selection -->
+            <div class="setup-step" data-step="5">
+                <h2>Scoring Models</h2>
+                <p class="step-desc">
+                    Choose which models to use for paper scoring. A fast model scores all papers,
+                    then a stronger model re-ranks the top papers for better precision.
+                </p>
+                <div class="setup-field">
+                    <label for="scoring-model">Scoring Model</label>
+                    <select id="scoring-model">
+                        <option value="claude-haiku-4-5-20251001" selected>Haiku (Recommended — fast & cheap)</option>
+                        <option value="claude-sonnet-4-5-20250929">Sonnet (more accurate, slower)</option>
+                        <option value="claude-opus-4-6">Opus (most accurate, slowest)</option>
+                    </select>
+                    <div class="hint">Scores all papers. Haiku handles 700+ papers quickly at ~10x lower cost.</div>
+                </div>
+                <div class="setup-field">
+                    <label for="rescore-model">Re-score Model</label>
+                    <select id="rescore-model">
+                        <option value="claude-sonnet-4-5-20250929" selected>Sonnet (Recommended)</option>
+                        <option value="claude-opus-4-6">Opus (most accurate)</option>
+                        <option value="">Same as scoring (disable re-scoring)</option>
+                    </select>
+                    <div class="hint">Re-ranks the top papers for better precision after the initial bulk pass.</div>
+                </div>
+                <div class="setup-field">
+                    <label for="rescore-top-n">Re-score Top N</label>
+                    <input type="number" id="rescore-top-n" value="15" min="0" max="100" step="1" style="width:6rem">
+                    <div class="hint">Number of top papers per domain to re-score. Set to 0 to disable.</div>
+                </div>
+            </div>
+
+            <!-- Step 6: Schedule -->
+            <div class="setup-step" data-step="6">
+                <h2>Schedule</h2>
+                <p class="step-desc">How often should pipelines run automatically?</p>
+                <div class="setup-field">
+                    <label for="schedule">Frequency</label>
+                    <select id="schedule">
+                        <option value="weekly" selected>Weekly (Sunday night)</option>
+                        <option value="daily">Daily (midnight UTC)</option>
+                        <option value="manual">Manual only</option>
+                    </select>
+                    <div class="hint">You can always trigger runs manually from the dashboard.</div>
+                </div>
+            </div>
+
+            <!-- Step 7: Review -->
+            <div class="setup-step" data-step="7">
+                <h2>Review & Save</h2>
+                <p class="step-desc">Here's your configuration. Click Save to get started.</p>
+                <div class="setup-summary" id="setup-summary"></div>
+            </div>
+
+            <div class="setup-nav">
+                <div class="step-dots" id="step-dots"></div>
+                <div style="display:flex; gap:0.5rem">
+                    <button type="button" class="btn btn-sm" id="btn-prev" onclick="prevStep()" style="display:none">Back</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-next" onclick="nextStep()">Get Started</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    var currentStep = 1;
+    var totalSteps = 7;
+    var apiKeyValid = false;
+
+    function initDots() {
+        var dots = document.getElementById('step-dots');
+        dots.innerHTML = '';
+        for (var i = 1; i <= totalSteps; i++) {
+            var dot = document.createElement('div');
+            dot.className = 'step-dot' + (i === 1 ? ' active' : '');
+            dot.dataset.step = i;
+            dots.appendChild(dot);
+        }
+    }
+    initDots();
+
+    function showStep(n) {
+        var steps = document.querySelectorAll('.setup-step');
+        steps.forEach(function(s) { s.classList.remove('active'); });
+        var target = document.querySelector('.setup-step[data-step="' + n + '"]');
+        if (target) target.classList.add('active');
+
+        var dots = document.querySelectorAll('.step-dot');
+        dots.forEach(function(d) {
+            var s = parseInt(d.dataset.step);
+            d.className = 'step-dot' + (s === n ? ' active' : (s < n ? ' done' : ''));
+        });
+
+        document.getElementById('btn-prev').style.display = n > 1 ? '' : 'none';
+        var nextBtn = document.getElementById('btn-next');
+        if (n === totalSteps) {
+            nextBtn.textContent = 'Save & Start';
+            buildSummary();
+        } else if (n === 1) {
+            nextBtn.textContent = 'Get Started';
+        } else {
+            nextBtn.textContent = 'Next';
+        }
+    }
+
+    function nextStep() {
+        if (currentStep === totalSteps) {
+            saveConfig();
+            return;
+        }
+        currentStep++;
+        showStep(currentStep);
+    }
+
+    function prevStep() {
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+        }
+    }
+
+    function toggleAxes(domain, enabled) {
+        var el = document.getElementById('axes-' + domain);
+        if (enabled) {
+            el.classList.remove('hidden');
+        } else {
+            el.classList.add('hidden');
+        }
+    }
+
+    function validateApiKey() {
+        var key = document.getElementById('api-key').value.trim();
+        if (!key) return;
+        var result = document.getElementById('api-key-result');
+        var btn = document.getElementById('validate-btn');
+        result.innerHTML = '<span class="api-key-status checking">Checking...</span>';
+        btn.disabled = true;
+
+        fetch('/api/setup/validate-key', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({api_key: key})
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.valid) {
+                result.innerHTML = '<span class="api-key-status valid">Valid</span>';
+                apiKeyValid = true;
+            } else {
+                result.innerHTML = '<span class="api-key-status invalid">Invalid — ' + (data.error || 'check your key') + '</span>';
+                apiKeyValid = false;
+            }
+            btn.disabled = false;
+        })
+        .catch(function() {
+            result.innerHTML = '<span class="api-key-status invalid">Connection error</span>';
+            btn.disabled = false;
+        });
+    }
+
+    function getScheduleCron() {
+        var v = document.getElementById('schedule').value;
+        if (v === 'daily') return '0 0 * * *';
+        if (v === 'manual') return '';
+        return '0 22 * * 0';
+    }
+
+    function modelLabel(val) {
+        if (!val) return 'Disabled';
+        if (val.indexOf('haiku') !== -1) return 'Haiku';
+        if (val.indexOf('sonnet') !== -1) return 'Sonnet';
+        if (val.indexOf('opus') !== -1) return 'Opus';
+        return val;
+    }
+
+    function buildSummary() {
+        var aiml = document.getElementById('domain-aiml').checked;
+        var sec = document.getElementById('domain-security').checked;
+        var gh = document.getElementById('github-enabled').checked;
+        var ev = document.getElementById('events-enabled').checked;
+        var sched = document.getElementById('schedule').value;
+        var hasKey = document.getElementById('api-key').value.trim().length > 0;
+        var scoringModel = document.getElementById('scoring-model').value;
+        var rescoreModel = document.getElementById('rescore-model').value;
+        var rescoreN = parseInt(document.getElementById('rescore-top-n').value) || 0;
+
+        var html = '';
+        var apiKeyStatus = hasKey ? (apiKeyValid ? 'Validated' : 'Set (unvalidated)') : 'Not set';
+        html += '<div class="summary-item"><span class="label">API Key</span><span class="value">' + apiKeyStatus + '</span></div>';
+        html += '<div class="summary-item"><span class="label">AI/ML</span><span class="value">' + (aiml ? 'Enabled' : 'Disabled') + '</span></div>';
+        html += '<div class="summary-item"><span class="label">Security</span><span class="value">' + (sec ? 'Enabled' : 'Disabled') + '</span></div>';
+        html += '<div class="summary-item"><span class="label">Scoring Model</span><span class="value">' + modelLabel(scoringModel) + '</span></div>';
+        var rescoreLabel = rescoreModel && rescoreN > 0 ? modelLabel(rescoreModel) + ' (top ' + rescoreN + ')' : 'Disabled';
+        html += '<div class="summary-item"><span class="label">Re-score</span><span class="value">' + rescoreLabel + '</span></div>';
+        html += '<div class="summary-item"><span class="label">GitHub</span><span class="value">' + (gh ? 'Enabled' : 'Disabled') + '</span></div>';
+        html += '<div class="summary-item"><span class="label">Events</span><span class="value">' + (ev ? 'Enabled' : 'Disabled') + '</span></div>';
+        html += '<div class="summary-item"><span class="label">Schedule</span><span class="value">' + sched.charAt(0).toUpperCase() + sched.slice(1) + '</span></div>';
+        document.getElementById('setup-summary').innerHTML = html;
+    }
+
+    function normalizeWeights(raw) {
+        var sum = raw.reduce(function(a, b) { return a + b; }, 0);
+        if (sum <= 0) {
+            var eq = 1.0 / (raw.length || 1);
+            return raw.map(function() { return eq; });
+        }
+        return raw.map(function(v) { return v / sum; });
+    }
+
+    function saveConfig() {
+        var btn = document.getElementById('btn-next');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        var aimlRaw = [
+            parseInt(document.getElementById('aiml-w1').value) || 0,
+            parseInt(document.getElementById('aiml-w2').value) || 0,
+            parseInt(document.getElementById('aiml-w3').value) || 0
+        ];
+        var secRaw = [
+            parseInt(document.getElementById('sec-w1').value) || 0,
+            parseInt(document.getElementById('sec-w2').value) || 0,
+            parseInt(document.getElementById('sec-w3').value) || 0
+        ];
+
+        var rescoreModel = document.getElementById('rescore-model').value;
+        var rescoreN = parseInt(document.getElementById('rescore-top-n').value) || 0;
+
+        var payload = {
+            api_key: document.getElementById('api-key').value.trim(),
+            scoring: {
+                model: document.getElementById('scoring-model').value,
+                rescore_model: rescoreModel || document.getElementById('scoring-model').value,
+                rescore_top_n: rescoreModel ? rescoreN : 0
+            },
+            domains: {
+                aiml: {
+                    enabled: document.getElementById('domain-aiml').checked,
+                    scoring_weights: normalizeWeights(aimlRaw)
+                },
+                security: {
+                    enabled: document.getElementById('domain-security').checked,
+                    scoring_weights: normalizeWeights(secRaw)
+                }
+            },
+            github: {enabled: document.getElementById('github-enabled').checked},
+            events: {enabled: document.getElementById('events-enabled').checked},
+            schedule: getScheduleCron()
+        };
+
+        fetch('/api/setup/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.status === 'ok') {
+                window.location.href = '/seed-preferences';
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Save & Start';
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(function() {
+            btn.disabled = false;
+            btn.textContent = 'Save & Start';
+            alert('Connection error');
+        });
+    }
+    </script>
+</body>
+</html>

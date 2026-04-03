@@ -1,0 +1,36 @@
+<div class="signal-buttons" id="signal-{{ paper_id }}">
+    <button class="signal-btn signal-btn--up{% if user_signal == 'upvote' %} active{% endif %}"
+            hx-post="/api/signal/{{ paper_id }}/upvote"
+            hx-target="#signal-{{ paper_id }}"
+            hx-swap="outerHTML"
+            hx-indicator="#signal-spinner-{{ paper_id }}"
+            title="More like this"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button>
+    <button class="signal-btn signal-btn--down{% if user_signal == 'downvote' %} active{% endif %}"
+            hx-post="/api/signal/{{ paper_id }}/downvote"
+            hx-target="#signal-{{ paper_id }}"
+            hx-swap="outerHTML"
+            hx-indicator="#signal-spinner-{{ paper_id }}"
+            title="Less like this"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/></svg></button>
+    <button class="signal-btn signal-btn--dismiss{% if user_signal == 'dismiss' %} active{% endif %}"
+            hx-post="/api/signal/{{ paper_id }}/dismiss"
+            hx-target="#signal-{{ paper_id }}"
+            hx-swap="outerHTML"
+            hx-indicator="#signal-spinner-{{ paper_id }}"
+            title="Hide — won't show in top results"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
+    <span class="signal-spinner htmx-indicator" id="signal-spinner-{{ paper_id }}"></span>
+</div>
+{% if include_oob_score is defined and include_oob_score and paper is defined and paper %}
+{% set pct = ((paper.composite or 0) | float / 10 * 100) | round(0) | int %}
+{% set level = 'high' if pct >= 65 else ('mid' if pct >= 40 else 'low') %}
+<td class="col-score composite score-{{ level }}" id="score-{{ paper.id }}" hx-swap-oob="true">
+    {% if paper.preference_boost is defined and paper.preference_boost != 0 %}
+    <span title="Adjusted: {{ paper.adjusted_score }} (raw {{ paper.composite }}{{ ' %+.1f'|format(paper.preference_boost) }})">
+        {{ paper.adjusted_score }}
+        {% if paper.preference_boost > 0 %}<span class="boost-arrow boost-up">&#9650;</span>{% elif paper.preference_boost < 0 %}<span class="boost-arrow boost-down">&#9660;</span>{% endif %}
+    </span>
+    <div class="score-raw">({{ paper.composite }})</div>
+    {% else %}
+    {{ paper.composite }}
+    {% endif %}
+</td>
+{% endif %}

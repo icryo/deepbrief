@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Events — Research Intelligence{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Events</h1>
+    <div class="subtitle">{{ total }} events tracked</div>
+</div>
+
+{% if deadlines %}
+<div class="event-section">
+    <div class="section-header">
+        <h2>Upcoming Deadlines</h2>
+        <span class="badge badge--purple">{{ deadlines | length }}</span>
+    </div>
+    {% for e in deadlines %}
+    <div class="event-card event-card--conference">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem">
+            <div style="min-width:0">
+                <div class="event-title">
+                    {% if e.url %}<a href="{{ e.url }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}
+                </div>
+                <div class="event-meta">
+                    {{ e.source }}
+                    {% if e.event_date %}· <strong style="color:var(--amber)">Deadline: {{ e.event_date | format_date('medium') }}</strong>{% endif %}
+                </div>
+                {% if e.description %}<div class="event-desc">{{ e.description[:250] }}{% if e.description | length > 250 %}&hellip;{% endif %}</div>{% endif %}
+            </div>
+            {% if e.event_date %}
+            <div style="flex-shrink:0; text-align:right; font-family:var(--font-mono); font-size:0.8rem; color:var(--text-muted); white-space:nowrap">
+                {{ e.event_date | format_date }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if releases %}
+<div class="event-section">
+    <div class="section-header">
+        <h2>Notable Releases</h2>
+        <span class="badge badge--emerald">{{ releases | length }}</span>
+    </div>
+    {% for e in releases %}
+    <div class="event-card event-card--release">
+        <div class="event-title">
+            {% if e.url %}<a href="{{ e.url }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}
+        </div>
+        <div class="event-meta">
+            {{ e.source }}
+            {% if e.event_date %}· {{ e.event_date | format_date }}{% endif %}
+            {% if e.relevance_score %}· Relevance: {{ e.relevance_score }}{% endif %}
+        </div>
+        {% if e.description %}<div class="event-desc">{{ e.description[:200] }}{% if e.description | length > 200 %}&hellip;{% endif %}</div>{% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if news %}
+<div class="event-section">
+    <div class="section-header">
+        <h2>News</h2>
+        <span class="badge badge--accent">{{ news | length }}</span>
+    </div>
+    {% for e in news %}
+    <div class="event-card event-card--news">
+        <div class="event-title">
+            {% if e.url %}<a href="{{ e.url }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}
+        </div>
+        <div class="event-meta">
+            {{ e.source }}
+            {% if e.event_date %}· {{ e.event_date | format_date('medium') }}{% endif %}
+        </div>
+        {% if e.description %}<div class="event-desc">{{ e.description[:200] }}{% if e.description | length > 200 %}&hellip;{% endif %}</div>{% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if not deadlines and not releases and not news %}
+<div class="empty-state">
+    <h2>No events yet</h2>
+    <p>Run the events pipeline to populate this page.</p>
+    <form method="post" action="/run/events" style="margin-top:1rem">
+        <button type="submit" class="btn btn-primary">Run Events Pipeline</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

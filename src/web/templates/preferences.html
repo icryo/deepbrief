@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Preferences — Research Intelligence{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem">
+        <div>
+            <h1>Preferences</h1>
+            <div class="subtitle">
+                {{ total_prefs }} learned preference{{ 's' if total_prefs != 1 else '' }}
+                {% if updated_at %} · Last updated {{ updated_at[:16] }}{% endif %}
+            </div>
+        </div>
+        <div style="display:flex; gap:0.5rem">
+            <button class="btn btn-sm" onclick="this.disabled=true;this.textContent='Recomputing...';fetch('/api/preferences/recompute',{method:'POST'}).then(function(){showToast('Preferences recomputed','success');setTimeout(function(){location.reload()},500)}).catch(function(){showToast('Failed','error')})">Recompute</button>
+            <button class="btn btn-sm" style="color:var(--red)" onclick="if(confirm('Reset all preferences and signal history?')){this.disabled=true;fetch('/api/preferences/reset',{method:'POST'}).then(function(){showToast('Preferences reset','success');setTimeout(function(){location.reload()},500)}).catch(function(){showToast('Failed','error')})}">Reset All</button>
+        </div>
+    </div>
+</div>
+
+{# Signal summary #}
+<div class="stats-grid" style="margin-bottom:2rem">
+    <div class="stat-card stat-card--green">
+        <div class="label">Saves</div>
+        <div class="value">{{ signal_counts.get('save', 0) }}</div>
+    </div>
+    <div class="stat-card stat-card--blue">
+        <div class="label">Upvotes</div>
+        <div class="value">{{ signal_counts.get('upvote', 0) }}</div>
+    </div>
+    <div class="stat-card stat-card--purple">
+        <div class="label">Views</div>
+        <div class="value">{{ signal_counts.get('view', 0) }}</div>
+    </div>
+    <div class="stat-card stat-card--red">
+        <div class="label">Downvotes</div>
+        <div class="value">{{ signal_counts.get('downvote', 0) }}</div>
+    </div>
+    <div class="stat-card" style="background:var(--bg-card)">
+        <div class="label">Dismissed</div>
+        <div class="value">{{ signal_counts.get('dismiss', 0) }}</div>
+    </div>
+</div>
+
+{% if total_prefs == 0 %}
+<div class="empty-state">
+    <h2>No preferences yet</h2>
+    <p>Rate papers using the arrow buttons to build your preference profile. The system learns from saves, upvotes, downvotes, and dismissals.</p>
+</div>
+{% else %}
+
+{# Preference groups #}
+{% set pref_labels = {'topic': 'Topics', 'keyword': 'Keywords', 'category': 'Categories', 'author': 'Authors', 'axis_pref': 'Axis Preferences'} %}
+
+<div class="pref-groups">
+{% for prefix, items in grouped.items() %}
+{% set label = pref_labels.get(prefix, prefix | capitalize) %}
+<div class="pref-group">
+    <div class="section-header">
+        <h2>{{ label }}</h2>
+        <span class="badge badge--accent">{{ items | length }}</span>
+    </div>
+
+    <div class="pref-list">
+        {% for item in items[:20] %}
+        <div class="pref-item">
+            <span class="pref-item__name">{{ item.name }}</span>
+            <span class="pref-item__count" title="{{ item.count }} signal{{ 's' if item.count != 1 else '' }}">{{ item.count }}x</span>
+            <div class="pref-bar-container">
+                {% set abs_val = (item.value | abs * 100) | round(0) | int %}
+                {% if item.value > 0 %}
+                <div class="pref-bar pref-bar--positive" style="width:{{ abs_val }}%"></div>
+                {% else %}
+                <div class="pref-bar pref-bar--negative" style="width:{{ abs_val }}%"></div>
+                {% endif %}
+            </div>
+            <span class="pref-item__value {% if item.value > 0 %}pref-positive{% else %}pref-negative{% endif %}">{{ '%+.2f'|format(item.value) }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+</div>
+
+{% endif %}
+{% endblock %}

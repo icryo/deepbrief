@@ -1,0 +1,30 @@
+{% set display_score = p.adjusted_score if (p.adjusted_score is defined and p.preference_boost is defined and p.preference_boost != 0) else p.composite %}
+{% set pct = ((display_score or 0) | float / 10 * 100) | round(0) | int %}
+{% set level = 'high' if pct >= 65 else ('mid' if pct >= 40 else 'low') %}
+<div class="paper-card">
+    <div class="card-top">
+        <div style="min-width:0">
+            <span class="rank">#{{ rank if rank is defined else "" }}</span>
+            <div class="title"><a href="/papers/{{ p.domain }}/{{ p.id }}">{{ p.title }}</a></div>
+            <div class="meta">
+                {% if p.code_url or p.github_repo %}<span class="badge-code">CODE</span>{% endif %}
+                {% if p.hf_models %}<span class="badge-hf">HF</span>{% endif %}
+                {% if p.source == "both" %}<span class="badge-source">HF+arXiv</span>{% endif %}
+                {% if p.is_discovery is defined and p.is_discovery %}<span class="badge badge--discover">DISCOVER</span>{% endif %}
+                <span>{{ p.published[:10] if p.published else "" }}</span>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.35rem">
+            {% if p.preference_boost is defined and p.preference_boost > 0.1 %}
+            <span class="boost-pip boost-pip--up" title="Preference boost: {{ '%+.1f'|format(p.preference_boost) }}">&#9650;</span>
+            {% elif p.preference_boost is defined and p.preference_boost < -0.1 %}
+            <span class="boost-pip boost-pip--down" title="Preference penalty: {{ '%+.1f'|format(p.preference_boost) }}">&#9660;</span>
+            {% endif %}
+            <div class="score-badge {{ level }}">{{ display_score }}</div>
+        </div>
+    </div>
+    {% if p.summary %}<div class="summary-text">{{ p.summary[:200] }}{% if p.summary | length > 200 %}&hellip;{% endif %}</div>{% endif %}
+    <div class="score-mini-track">
+        <div class="score-mini-fill {{ level }}" style="width:{{ pct }}%"></div>
+    </div>
+</div>

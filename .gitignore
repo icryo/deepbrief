@@ -1,0 +1,24 @@
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+.env
+!.env.example
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/weeks/
+data/backups/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.pytest_cache/
+
+# Paper2Video artifacts
+result/
+paper2video/result/
+*.wav
+*.mp4
+*.pdf

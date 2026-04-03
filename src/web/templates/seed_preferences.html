@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% block title %}Pick Papers You Like — Research Intelligence{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Pick Papers You Like</h1>
+    <div class="subtitle">Rate a few papers to personalize your feed. Click thumbs up or down, then hit Done.</div>
+</div>
+
+{% if papers %}
+<div class="seed-grid" id="seed-grid">
+    {% for p in papers %}
+    <div class="seed-card" data-arxiv="{{ p.arxiv_id }}">
+        <div class="seed-card__body">
+            <div class="seed-card__domain">
+                {% if p.domain == 'aiml' %}
+                <span class="badge badge--accent">AI/ML</span>
+                {% elif p.domain == 'security' %}
+                <span class="badge badge--red">Security</span>
+                {% endif %}
+            </div>
+            <div class="seed-card__title">{{ p.title }}</div>
+            {% if p.summary %}
+            <div class="seed-card__summary">{{ p.summary[:150] }}{% if p.summary | length > 150 %}&hellip;{% endif %}</div>
+            {% endif %}
+        </div>
+        <div class="seed-card__actions">
+            <button type="button" class="seed-btn seed-btn--up" onclick="seedRate(this, 'upvote')" title="More like this">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+            </button>
+            <button type="button" class="seed-btn seed-btn--down" onclick="seedRate(this, 'downvote')" title="Less like this">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/></svg>
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div style="text-align:center; margin-top:2rem" id="seed-actions">
+    <span id="seed-count" style="color:var(--text-muted); font-size:0.85rem; margin-right:1rem">0 rated</span>
+    <button type="button" class="btn btn-primary" id="seed-done" onclick="seedDone()">Done</button>
+</div>
+
+<!-- Results panel (hidden until submit) -->
+<div id="seed-results" style="display:none">
+    <div class="seed-results-card">
+        <div class="seed-results-header">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <span id="results-headline">Preferences learned</span>
+        </div>
+        <p class="seed-results-subtext" id="results-subtext"></p>
+
+        <div class="seed-results-cols" id="results-cols">
+            <div id="results-boosted" style="display:none">
+                <div class="seed-results-label seed-results-label--boost">Boosted</div>
+                <div id="results-boosted-list" class="seed-results-list"></div>
+            </div>
+            <div id="results-penalized" style="display:none">
+                <div class="seed-results-label seed-results-label--penalize">Penalized</div>
+                <div id="results-penalized-list" class="seed-results-list"></div>
+            </div>
+        </div>
+
+        <div class="seed-results-explain">
+            These weights adjust paper rankings in your feed. Continue rating papers on the main pages to refine further.
+        </div>
+
+        <div style="display:flex; gap:0.75rem; justify-content:center; margin-top:1.5rem">
+            <a href="/" class="btn btn-primary">Go to Dashboard</a>
+            <a href="/preferences" class="btn">View All Preferences</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.seed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+.seed-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    animation: fadeSlideUp 0.35s ease-out both;
+}
+.seed-card.rated-up {
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.1);
+}
+.seed-card.rated-down {
+    border-color: rgba(239, 68, 68, 0.3);
+    opacity: 0.6;
+}
+.seed-card__title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    margin: 0.35rem 0;
+}
+.seed-card__summary {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-top: 0.25rem;
+}
+.seed-card__actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+.seed-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.45rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.15s;
+}
+.seed-btn:hover {
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+}
+.seed-btn--up.active {
+    background: var(--emerald-glow);
+    color: var(--emerald);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+.seed-btn--down.active {
+    background: var(--red-glow);
+    color: var(--red);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Results panel */
+.seed-results-card {
+    max-width: 640px;
+    margin: 0 auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 2rem 2.25rem;
+    animation: fadeSlideUp 0.4s ease-out both;
+}
+.seed-results-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+}
+.seed-results-subtext {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0.5rem 0 1.25rem;
+    line-height: 1.5;
+}
+.seed-results-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+}
+@media (max-width: 500px) {
+    .seed-results-cols { grid-template-columns: 1fr; }
+}
+.seed-results-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 2px solid var(--border);
+}
+.seed-results-label--boost { color: var(--emerald); border-color: rgba(16, 185, 129, 0.3); }
+.seed-results-label--penalize { color: var(--red); border-color: rgba(239, 68, 68, 0.25); }
+
+.seed-results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+.seed-result-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--radius);
+    font-size: 0.82rem;
+    background: var(--bg);
+    animation: fadeSlideUp 0.3s ease-out both;
+}
+.seed-result-item__name {
+    flex: 1;
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.seed-result-item__type {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+}
+.seed-result-item__bar {
+    width: 48px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--bg-surface);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.seed-result-item__bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease-out;
+}
+.seed-result-item__bar-fill--pos { background: var(--emerald); }
+.seed-result-item__bar-fill--neg { background: var(--red); }
+
+.seed-result-item__val {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    width: 3.2rem;
+    text-align: right;
+    flex-shrink: 0;
+}
+.seed-result-item__val--pos { color: var(--emerald); }
+.seed-result-item__val--neg { color: var(--red); }
+
+.seed-results-explain {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    line-height: 1.55;
+    padding: 0.75rem;
+    background: var(--bg);
+    border-radius: var(--radius);
+    border-left: 3px solid var(--accent);
+}
+</style>
+
+<script>
+var seedRatings = {};
+
+function seedRate(btn, action) {
+    var card = btn.closest('.seed-card');
+    var arxivId = card.dataset.arxiv;
+    var upBtn = card.querySelector('.seed-btn--up');
+    var downBtn = card.querySelector('.seed-btn--down');
+
+    // Toggle off if already active
+    if (seedRatings[arxivId] === action) {
+        delete seedRatings[arxivId];
+        upBtn.classList.remove('active');
+        downBtn.classList.remove('active');
+        card.classList.remove('rated-up', 'rated-down');
+    } else {
+        seedRatings[arxivId] = action;
+        upBtn.classList.toggle('active', action === 'upvote');
+        downBtn.classList.toggle('active', action === 'downvote');
+        card.classList.toggle('rated-up', action === 'upvote');
+        card.classList.toggle('rated-down', action === 'downvote');
+    }
+
+    document.getElementById('seed-count').textContent = Object.keys(seedRatings).length + ' rated';
+}
+
+function seedDone() {
+    var count = Object.keys(seedRatings).length;
+    if (count === 0) {
+        window.location.href = '/';
+        return;
+    }
+
+    var btn = document.getElementById('seed-done');
+    btn.disabled = true;
+    btn.textContent = 'Computing preferences...';
+
+    fetch('/api/seed-preferences', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ratings: seedRatings})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        showResults(data);
+    })
+    .catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'Done';
+        alert('Error saving preferences');
+    });
+}
+
+function showResults(data) {
+    // Hide grid and action bar
+    document.getElementById('seed-grid').style.display = 'none';
+    document.getElementById('seed-actions').style.display = 'none';
+
+    // Update header
+    document.querySelector('.page-header h1').textContent = 'Preferences Learned';
+    document.querySelector('.page-header .subtitle').textContent = '';
+
+    var summary = data.summary || {};
+    var boosted = summary.boosted || [];
+    var penalized = summary.penalized || [];
+
+    // Headline
+    document.getElementById('results-subtext').textContent =
+        data.count + ' rating' + (data.count !== 1 ? 's' : '') + ' recorded, ' +
+        data.total_preferences + ' preference signal' + (data.total_preferences !== 1 ? 's' : '') + ' computed. ' +
+        'Future papers will be ranked using these weights.';
+
+    // Render boosted
+    if (boosted.length > 0) {
+        document.getElementById('results-boosted').style.display = '';
+        var list = document.getElementById('results-boosted-list');
+        list.innerHTML = '';
+        for (var i = 0; i < boosted.length; i++) {
+            list.appendChild(makeResultItem(boosted[i], true, i));
+        }
+    }
+
+    // Render penalized
+    if (penalized.length > 0) {
+        document.getElementById('results-penalized').style.display = '';
+        var list2 = document.getElementById('results-penalized-list');
+        list2.innerHTML = '';
+        for (var j = 0; j < penalized.length; j++) {
+            list2.appendChild(makeResultItem(penalized[j], false, j));
+        }
+    }
+
+    // Handle case with no preferences detected
+    if (boosted.length === 0 && penalized.length === 0) {
+        document.getElementById('results-cols').innerHTML =
+            '<div style="grid-column:1/-1; text-align:center; padding:1rem; color:var(--text-muted); font-size:0.85rem">' +
+            'Ratings saved. Preferences will become more visible as you rate papers on the main pages.' +
+            '</div>';
+    }
+
+    document.getElementById('seed-results').style.display = '';
+}
+
+function makeResultItem(item, isPositive, index) {
+    var el = document.createElement('div');
+    el.className = 'seed-result-item';
+    el.style.animationDelay = (index * 0.05) + 's';
+
+    var absVal = Math.abs(item.value);
+    var barWidth = Math.min(100, Math.round(absVal * 100));
+
+    el.innerHTML =
+        '<span class="seed-result-item__type">' + item.type + '</span>' +
+        '<span class="seed-result-item__name">' + item.name + '</span>' +
+        '<div class="seed-result-item__bar">' +
+            '<div class="seed-result-item__bar-fill seed-result-item__bar-fill--' + (isPositive ? 'pos' : 'neg') + '" style="width:' + barWidth + '%"></div>' +
+        '</div>' +
+        '<span class="seed-result-item__val seed-result-item__val--' + (isPositive ? 'pos' : 'neg') + '">' +
+            (isPositive ? '+' : '') + item.value.toFixed(3) +
+        '</span>';
+
+    return el;
+}
+</script>
+{% else %}
+<div class="empty-state">
+    <h2>No seed papers available</h2>
+    <p>Run a pipeline first to populate papers, then come back to seed your preferences.</p>
+    <a href="/" class="btn btn-primary" style="margin-top:1rem">Go to Dashboard</a>
+</div>
+{% endif %}
+{% endblock %}

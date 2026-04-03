@@ -1,0 +1,86 @@
+{% if search_results %}
+<div style="margin-bottom:0.75rem; color:var(--text-muted); font-size:0.85rem">
+    {{ total }} result{{ 's' if total != 1 else '' }} for &ldquo;{{ q }}&rdquo;{% if domain %} in <strong>{{ 'AI/ML' if domain == 'aiml' else 'Security' }}</strong>{% endif %}
+</div>
+
+<table class="paper-table">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Title</th>
+            <th class="col-score">Score</th>
+            <th>Domain</th>
+            <th>Date</th>
+            <th class="col-summary">Matched Summary</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in search_results %}
+        {% set rank = (page - 1) * per_page + loop.index %}
+        {% set pct = ((p.composite or 0) | float / 10 * 100) | round(0) | int %}
+        {% set level = 'high' if pct >= 65 else ('mid' if pct >= 40 else 'low') %}
+        <tr>
+            <td class="col-rank">{{ rank }}</td>
+            <td>
+                <a href="/papers/{{ p.domain }}/{{ p.id }}" class="paper-title-link">
+                    {{ p.snip_title | safe }}
+                </a>
+                {% if p.topics is iterable and p.topics is not string and p.topics | length > 0 %}
+                <div style="margin-top:2px">
+                    {% for t in p.topics[:2] %}
+                    <span class="badge badge--accent" style="font-size:0.55rem; padding:0.08rem 0.35rem">{{ t }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </td>
+            <td class="col-score composite score-{{ level }}">{{ p.composite }}</td>
+            <td>
+                {% if p.domain == 'aiml' %}
+                <span class="badge badge--accent">AI/ML</span>
+                {% elif p.domain == 'security' %}
+                <span class="badge badge--red">SECURITY</span>
+                {% endif %}
+            </td>
+            <td style="font-size:0.82rem; white-space:nowrap">{{ p.published | format_date }}</td>
+            <td class="col-summary">
+                {% if p.snip_summary and p.snip_summary != '...' %}
+                    {{ p.snip_summary | safe }}
+                {% elif p.snip_abstract and p.snip_abstract != '...' %}
+                    {{ p.snip_abstract | safe }}
+                {% else %}
+                    {{ (p.summary or "")[:120] }}{% if (p.summary or "") | length > 120 %}&hellip;{% endif %}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% set filter_qs %}&domain={{ domain | urlencode }}&sort={{ sort | urlencode }}&q={{ q | urlencode }}{% endset %}
+
+{% if total > per_page %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="/weeks?page={{ page - 1 }}{{ filter_qs }}"
+       hx-get="/weeks?page={{ page - 1 }}{{ filter_qs }}"
+       hx-target="#archive-results" hx-push-url="true" hx-indicator="#page-loader"
+       class="btn btn-sm">&larr; Prev</a>
+    {% endif %}
+    <span class="page-info">
+        {{ (page - 1) * per_page + 1 }}&ndash;{{ [page * per_page, total] | min }} of {{ total }}
+    </span>
+    {% if page * per_page < total %}
+    <a href="/weeks?page={{ page + 1 }}{{ filter_qs }}"
+       hx-get="/weeks?page={{ page + 1 }}{{ filter_qs }}"
+       hx-target="#archive-results" hx-push-url="true" hx-indicator="#page-loader"
+       class="btn btn-sm">Next &rarr;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% elif q %}
+<div class="empty-state" style="padding:2rem">
+    <h2>No results</h2>
+    <p>No papers matched &ldquo;{{ q }}&rdquo;. Try different keywords or check spelling.</p>
+</div>
+{% endif %}

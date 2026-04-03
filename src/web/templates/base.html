@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Research Intelligence{% endblock %}</title>
+    <meta name="description" content="Research paper triage — AI/ML and Security">
+    <meta name="theme-color" content="#0b1121">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Research">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/static/favicon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=7">
+    <script src="/static/htmx.min.js"></script>
+</head>
+<body>
+    <div class="page-loader htmx-indicator" id="page-loader"></div>
+    <nav>
+        <a href="/" class="logo" style="text-decoration:none">
+            <span class="logo-dot"></span>
+            Research Intelligence
+        </a>
+        <div class="nav-links">
+            <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">Dashboard</a>
+            <a href="/papers/aiml" class="{% if active == 'aiml' %}active{% endif %}">AI / ML</a>
+            <a href="/papers/security" class="{% if active == 'security' %}active{% endif %}">Security</a>
+            {% if github_enabled() %}<a href="/github" class="{% if active == 'github' %}active{% endif %}">GitHub</a>{% endif %}
+            {% if events_enabled() %}<a href="/events" class="{% if active == 'events' %}active{% endif %}">Events</a>{% endif %}
+            {% if cli_intel_enabled() %}<a href="/cli-intel" class="{% if active == 'cli_intel' %}active{% endif %}">CLI Intel</a>{% endif %}
+            <a href="/weeks" class="{% if active == 'weeks' %}active{% endif %}">Archive</a>
+            <a href="/preferences" class="{% if active == 'preferences' %}active{% endif %}" title="Preferences">&#9881;</a>
+        </div>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+    <div class="toast-container" id="toasts"></div>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+    }
+    // Toast helper
+    function showToast(msg, type) {
+        var c = document.getElementById('toasts');
+        var t = document.createElement('div');
+        t.className = 'toast' + (type ? ' toast--' + type : '');
+        t.textContent = msg;
+        c.appendChild(t);
+        setTimeout(function() { t.remove(); }, 4000);
+    }
+    // Signal toast from HX-Trigger
+    document.body.addEventListener('showSignalToast', function(e) {
+        showToast(e.detail.message, e.detail.type);
+    });
+    // Scroll to top on HTMX content swap (pagination) + score flash on OOB
+    document.body.addEventListener('htmx:afterSwap', function(e) {
+        if (e.detail.target.id === 'paper-results' || e.detail.target.id === 'gh-results' || e.detail.target.id === 'archive-results') {
+            e.detail.target.scrollIntoView({behavior: 'smooth', block: 'start'});
+        }
+        if (e.detail.target.id && e.detail.target.id.startsWith('score-')) {
+            e.detail.target.classList.add('score-flash');
+            setTimeout(function() { e.detail.target.classList.remove('score-flash'); }, 800);
+        }
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+services:
+  researcher:
+    build: .
+    ports:
+      - "9090:8888"
+    volumes:
+      - ./data:/app/data
+      - ./paper2video/result:/app/paper2video/result
+    environment:
+      - USE_BEDROCK=${USE_BEDROCK:-true}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - PAPER2VIDEO_URL=http://localhost:8001
+      - P2V_RESULT_DIR=/app/paper2video/result
+      - CONFIG_PATH=data/config.yaml
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8888/api/status')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 4g

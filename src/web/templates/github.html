@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}GitHub Projects — Research Intelligence{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem">
+        <div>
+            <h1>GitHub Projects</h1>
+            <div class="subtitle">{{ total }} trending projects{% if run.date_start %} · {{ run.date_start }} to {{ run.date_end }}{% endif %}</div>
+        </div>
+        <button type="button" class="btn btn-sm btn-ghost" onclick="this.disabled=true;this.textContent='Running...';fetch('/run/github',{method:'POST'}).then(function(){showToast('GitHub pipeline started','success')}).catch(function(){showToast('Pipeline failed','error')})">Refresh Projects</button>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <form hx-get="/github" hx-target="#gh-results" hx-push-url="true" hx-indicator="#page-loader">
+        <input type="search" name="search" value="{{ search or '' }}" placeholder="Search repos...">
+        {% if available_languages %}
+        <select name="language" onchange="this.closest('form').requestSubmit()">
+            <option value="">All languages</option>
+            {% for lang in available_languages %}
+            <option value="{{ lang }}" {% if language == lang %}selected{% endif %}>{{ lang }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+        <select name="domain" onchange="this.closest('form').requestSubmit()">
+            <option value="">All domains</option>
+            <option value="aiml" {% if domain_filter == 'aiml' %}selected{% endif %}>AI/ML</option>
+            <option value="security" {% if domain_filter == 'security' %}selected{% endif %}>Security</option>
+        </select>
+        <select name="sort" onchange="this.closest('form').requestSubmit()">
+            <option value="score" {% if not sort or sort == 'score' %}selected{% endif %}>Sort: Score</option>
+            <option value="stars" {% if sort == 'stars' %}selected{% endif %}>Sort: Stars</option>
+            <option value="forks" {% if sort == 'forks' %}selected{% endif %}>Sort: Forks</option>
+            <option value="name" {% if sort == 'name' %}selected{% endif %}>Sort: Name</option>
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    </form>
+</div>
+
+<div id="gh-results">
+    {% include "partials/github_results.html" %}
+</div>
+{% endblock %}

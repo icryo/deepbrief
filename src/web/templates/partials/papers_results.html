@@ -1,0 +1,67 @@
+{% if papers %}
+<div class="table-scroll">
+<table class="paper-table">
+    <thead>
+        <tr>
+            <th class="col-rank">#</th>
+            <th>Title</th>
+            <th class="col-score">Score</th>
+            <th class="col-score" title="{{ axis_labels[0] }}">{{ abbreviate_label(axis_labels[0]) }}</th>
+            <th class="col-score" title="{{ axis_labels[1] }}">{{ abbreviate_label(axis_labels[1]) }}</th>
+            <th class="col-score" title="{{ axis_labels[2] }}">{{ abbreviate_label(axis_labels[2]) }}</th>
+            <th class="col-code">Code</th>
+            <th class="col-signals-header">Rate</th>
+            <th class="col-summary">Summary</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in papers %}
+        {% set rank = offset + loop.index %}
+        {% include "partials/paper_row.html" %}
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{% if not has_preferences is defined or not has_preferences %}
+<div class="cold-start-hint">
+    Rate papers to personalize your feed &mdash; use the arrows to tell the system what you like.
+</div>
+{% endif %}
+
+{% set filter_qs %}{% if search %}&search={{ search | urlencode }}{% endif %}{% if min_score %}&min_score={{ min_score }}{% endif %}{% if has_code %}&has_code=1{% endif %}{% if topic %}&topic={{ topic | urlencode }}{% endif %}{% if sort %}&sort={{ sort | urlencode }}{% endif %}{% endset %}
+
+{% if total > limit %}
+<div class="pagination">
+    {% if offset > 0 %}
+    <a href="/papers/{{ domain }}?offset={{ offset - limit }}&limit={{ limit }}{{ filter_qs }}"
+       hx-get="/papers/{{ domain }}?offset={{ offset - limit }}&limit={{ limit }}{{ filter_qs }}"
+       hx-target="#paper-results" hx-push-url="true" hx-indicator="#page-loader"
+       class="btn btn-sm">&larr; Prev</a>
+    {% endif %}
+    <span class="page-info">{{ offset + 1 }}&ndash;{{ [offset + limit, total] | min }} of {{ total }}</span>
+    {% if offset + limit < total %}
+    <a href="/papers/{{ domain }}?offset={{ offset + limit }}&limit={{ limit }}{{ filter_qs }}"
+       hx-get="/papers/{{ domain }}?offset={{ offset + limit }}&limit={{ limit }}{{ filter_qs }}"
+       hx-target="#paper-results" hx-push-url="true" hx-indicator="#page-loader"
+       class="btn btn-sm">Next &rarr;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <h2>No papers found</h2>
+    {% if search or min_score or has_code or topic %}
+    <p>Try adjusting your filters.</p>
+    {% else %}
+    <p>Run the {{ domain_label }} pipeline to get started.</p>
+    <form method="post" action="/run/{{ domain }}" style="margin-top:1rem">
+        <button type="submit" class="btn btn-primary"
+                onclick="this.disabled=true;this.textContent='Starting...'">
+            Run {{ domain_label }} Pipeline
+        </button>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
