@@ -1,15 +1,17 @@
 #!/bin/bash
 set -e
 
-echo "=== Research Intelligence ==="
+P2V_PORT="${P2V_PORT:-8001}"
+WEB_PORT="${WEB_PORT:-8888}"
+
+echo "=== DeepBrief ==="
 
 # Start Paper2Video API in background
-echo "Starting Paper2Video API on port 8001 ..."
+echo "Starting Paper2Video API on port ${P2V_PORT} ..."
 cd /app/paper2video
-python -m uvicorn api:app --host 0.0.0.0 --port 8001 &
-P2V_PID=$!
+python -m uvicorn api:app --host 0.0.0.0 --port "${P2V_PORT}" &
 cd /app
 
-# Start researcher dashboard
-echo "Starting web server + scheduler on port 8888 ..."
-exec python -m uvicorn src.web.app:app --host 0.0.0.0 --port 8888
+# Start dashboard
+echo "Starting dashboard on port ${WEB_PORT} ..."
+exec python -m uvicorn src.web.app:app --host 0.0.0.0 --port "${WEB_PORT}"

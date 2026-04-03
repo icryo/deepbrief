@@ -1,30 +1,10 @@
-# Researcher
+# DeepBrief
 
-Research triage dashboard with automated paper-to-video generation.
+Research intelligence dashboard with automated paper-to-video generation.
 
 - **Dashboard** — Scores and surfaces AI/ML and security papers from arXiv and HuggingFace
 - **Paper2Video** — Generates narrated video summaries from any paper with one click
 - **Preferences** — Learns from your signals (upvote, save, dismiss) to personalize rankings
-
-## Architecture
-
-Single container running two services:
-
-```
-┌──────────────────────────────────────────────┐
-│  Container                                   │
-│                                              │
-│  Researcher (port 8888 → host 9090)         │
-│  ├─ Paper scoring (Claude via Bedrock)       │
-│  ├─ GitHub trending, events, CLI intel       │
-│  └─ "Generate Video" button on papers        │
-│         │                                    │
-│         ▼ POST /jobs (localhost:8001)        │
-│  Paper2Video API (port 8001)                 │
-│  ├─ PDF → images → script → TTS → video     │
-│  └─ Claude (Bedrock) + Amazon Polly          │
-└──────────────────────────────────────────────┘
-```
 
 ## Setup
 
@@ -33,7 +13,6 @@ cp .env.example .env
 # Edit .env with your AWS credentials
 
 docker compose up -d --build
-# Dashboard at http://localhost:9090
 ```
 
 ## Environment variables
@@ -46,6 +25,9 @@ docker compose up -d --build
 | `USE_BEDROCK` | No | `true` (default) to use Bedrock for scoring |
 | `ANTHROPIC_API_KEY` | No | Alternative to Bedrock |
 | `GITHUB_TOKEN` | No | Higher GitHub API rate limits |
+| `WEB_PORT` | No | Dashboard port inside container (default `8888`) |
+| `WEB_PORT_HOST` | No | Dashboard port on host (default `9090`) |
+| `P2V_PORT` | No | Paper2Video API port (default `8001`) |
 
 ## Paper2Video CLI (standalone)
 
@@ -71,7 +53,7 @@ python pipeline_editorial.py \
 ## Project structure
 
 ```
-├── src/                       # Researcher dashboard
+├── src/                       # Dashboard
 │   ├── web/app.py             # FastAPI routes + HTMX
 │   ├── scoring.py             # Claude scoring (Bedrock or direct)
 │   ├── pipelines/             # Data pipelines (aiml, security, github, events)
@@ -84,6 +66,5 @@ python pipeline_editorial.py \
 │   └── ...
 ├── data/                      # SQLite DB + config (gitignored)
 ├── docker-compose.yml
-├── Dockerfile
-└── entrypoint.sh
+└── Dockerfile
 ```

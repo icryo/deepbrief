@@ -8,17 +8,6 @@
             {% set paper_id = paper.id %}
             {% set user_signal = paper.user_signal if paper.user_signal is defined else None %}
             {% include "partials/signal_buttons.html" %}
-            {% if not in_finboard %}
-            <button class="btn btn-primary btn-sm"
-                    hx-post="/api/finboard/{{ paper.id }}"
-                    hx-swap="outerHTML"
-                    hx-indicator="#page-loader"
-                    hx-disabled-elt="this">
-                Add to Reading List
-            </button>
-            {% else %}
-            <button class="btn btn-sm" disabled style="opacity:0.6">&#10003; In Finboard</button>
-            {% endif %}
         </div>
     </div>
 

@@ -54,7 +54,6 @@ from src.cli_intel_db import (
     get_finding_repos,
     init_cli_intel_db,
 )
-from src.finboard import add_paper_to_finboard, is_in_finboard
 from src.preferences import compute_preferences, enrich_papers_with_preferences
 
 app = FastAPI(title="Research Intelligence")
@@ -398,12 +397,6 @@ async def paper_detail(request: Request, domain: str, paper_id: int):
     papers_enriched = enrich_papers_with_preferences([paper], preferences)
     paper = papers_enriched[0]
 
-    # Check finboard status
-    arxiv_url = paper.get("arxiv_url", "")
-    if not arxiv_url:
-        arxiv_url = f"https://arxiv.org/abs/{paper.get('arxiv_id', '')}"
-    in_finboard = is_in_finboard(arxiv_url, title=paper.get("title", ""))
-
     video_job = get_video_job(paper_id)
 
     return templates.TemplateResponse("paper_detail.html", {
@@ -415,7 +408,6 @@ async def paper_detail(request: Request, domain: str, paper_id: int):
         "axis_labels": config["axis_labels"],
         "score_bar": score_bar,
         "connections": connections,
-        "in_finboard": in_finboard,
         "video_job": video_job,
     })
 
@@ -771,39 +763,6 @@ async def api_status():
         "cli_intel_count": count_cli_findings(),
         "running_pipelines": running,
     }
-
-
-# ---------------------------------------------------------------------------
-# Finboard integration
-# ---------------------------------------------------------------------------
-
-
-@app.post("/api/finboard/{paper_id}", response_class=HTMLResponse)
-async def add_to_finboard(request: Request, paper_id: int):
-    """Add a paper to finboard's reading list. Returns HTMX partial."""
-    paper = get_paper(paper_id)
-    if not paper:
-        return HTMLResponse('<span style="color:var(--red)">Paper not found</span>')
-
-    result = add_paper_to_finboard(paper)
-    if result == "added":
-        # Also record as a save signal for preference learning
-        insert_signal(paper_id, "save")
-        _maybe_recompute_preferences()
-        return HTMLResponse(
-            '<button class="btn btn-sm" disabled style="opacity:0.6">'
-            '&#10003; Added to Finboard</button>'
-        )
-    elif result == "exists":
-        return HTMLResponse(
-            '<button class="btn btn-sm" disabled style="opacity:0.6">'
-            'Already in Finboard</button>'
-        )
-    else:
-        return HTMLResponse(
-            '<span style="color:var(--red); font-size:0.82rem">'
-            'Finboard DB not found</span>'
-        )
 
 
 # ---------------------------------------------------------------------------

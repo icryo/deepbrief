@@ -1,20 +1,22 @@
 services:
-  researcher:
+  deepbrief:
     build: .
     ports:
-      - "9090:8888"
+      - "${WEB_PORT_HOST:-9090}:${WEB_PORT:-8888}"
     volumes:
       - ./data:/app/data
       - ./paper2video/result:/app/paper2video/result
     environment:
+      - WEB_PORT=${WEB_PORT:-8888}
+      - P2V_PORT=${P2V_PORT:-8001}
+      - PAPER2VIDEO_URL=http://localhost:${P2V_PORT:-8001}
+      - P2V_RESULT_DIR=/app/paper2video/result
       - USE_BEDROCK=${USE_BEDROCK:-true}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
-      - PAPER2VIDEO_URL=http://localhost:8001
-      - P2V_RESULT_DIR=/app/paper2video/result
       - CONFIG_PATH=data/config.yaml
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
